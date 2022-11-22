@@ -28,9 +28,6 @@ interface CaptureBitmaps {
 
 /**
  * Interactor for capturing a list of bitmaps by screenshotting the device every [CAPTURE_INTERVAL_MS].
- *
- * The way we capture a screenshot diverges for [Build.VERSION_CODES] >= [Build.VERSION_CODES.O].
- * We must use [PixelCopy] for API level 26 (O) and above.
  * This makes things a little annoying because [PixelCopy.request] has a callback we need to use.
  */
 class CaptureBitmapsInteractor

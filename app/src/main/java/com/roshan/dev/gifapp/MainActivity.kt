@@ -39,8 +39,7 @@ class MainActivity : ComponentActivity() {
                             viewModel.updateState(
                                 MainState.DisplayBackgroundAsset(
                                     backgroundAssetUri = it,
-                                    capturingViewBounds = null,
-                                    capturedBitmap = null,
+                                    capturingViewBounds = null
                                 )
                             )
                         }
@@ -81,8 +80,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    val view = LocalView.current
                     val state = viewModel.state.value
+                    val view = LocalView.current
                     Column(modifier = Modifier.fillMaxSize()) {
                         when (state) {
                             MainState.Initial -> {
@@ -100,16 +99,13 @@ class MainActivity : ComponentActivity() {
 
                             is MainState.DisplayBackgroundAsset -> BackgroundAsset(
                                 backgroundAssetUri = state.backgroundAssetUri,
-                                capturedBitmap = state.capturedBitmap,
                                 updateCapturingViewBounds = { rect ->
                                     viewModel.updateState(
-                                        state.copy(
-                                            capturingViewBounds = rect
-                                        )
+                                        state.copy(capturingViewBounds = rect)
                                     )
                                 },
                                 startBitmapCaptureJob = {
-                                    viewModel.captureScreenshot(
+                                    viewModel.runBitmapCaptureJob(
                                         view = view,
                                         window = window
                                     )
@@ -118,6 +114,8 @@ class MainActivity : ComponentActivity() {
                                     backgroundAssetPickerLauncher.launch("image/*")
                                 }
                             )
+
+                            else -> {}
                         }
                     }
                 }

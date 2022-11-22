@@ -1,6 +1,5 @@
 package com.roshan.dev.gifapp.ui.compose
 
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,7 +39,6 @@ import kotlin.math.sin
 @Composable
 fun BackgroundAsset(
     backgroundAssetUri: Uri,
-    capturedBitmap: Bitmap?,
     updateCapturingViewBounds: (Rect) -> Unit,
     startBitmapCaptureJob: () -> Unit,
     launchImagePicker: () -> Unit,
@@ -63,7 +61,8 @@ fun BackgroundAsset(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
-                .zIndex(2f),
+                .zIndex(2f)
+            ,
             isRecording = isRecording,
             updateIsRecording = {
                 isRecording = it
@@ -84,17 +83,15 @@ fun BackgroundAsset(
                     end.linkTo(parent.end)
                     top.linkTo(topBar.bottom)
                 }
-                .zIndex(1f),
-            backgroundAssetUri = backgroundAssetUri,
-            assetContainerHeightDp = assetContainerHeight,
+                .zIndex(1f)
+            ,
             updateCapturingViewBounds = updateCapturingViewBounds,
-            captureBitmap = capturedBitmap
-
+            backgroundAssetUri = backgroundAssetUri,
+            assetContainerHeightDp = assetContainerHeight
         )
 
         // Bottom container
-        val bottomContainerHeight =
-            remember { configuration.screenHeightDp - assetContainerHeight - topBarHeight }
+        val bottomContainerHeight = remember { configuration.screenHeightDp - assetContainerHeight - topBarHeight }
         BackgroundAssetFooter(
             modifier = Modifier
                 .background(Color.White)
@@ -105,7 +102,8 @@ fun BackgroundAsset(
                     top.linkTo(assetContainer.bottom)
                     bottom.linkTo(parent.bottom)
                 }
-                .zIndex(2f),
+                .zIndex(2f)
+            ,
             isRecording = isRecording,
             launchImagePicker = launchImagePicker
         )
@@ -116,26 +114,23 @@ fun BackgroundAsset(
 fun RenderBackground(
     modifier: Modifier,
     backgroundAssetUri: Uri,
-    assetContainerHeightDp: Int,
     updateCapturingViewBounds: (Rect) -> Unit,
-    captureBitmap: Bitmap?
+    assetContainerHeightDp: Int,
 ) {
     Box(
         modifier = modifier
             .wrapContentSize()
     ) {
-
-        val backgroundAsset = if (captureBitmap != null) {
-            rememberAsyncImagePainter(model = captureBitmap)
-        } else {
-            rememberAsyncImagePainter(model = backgroundAssetUri)
-        }
+        val painter = rememberAsyncImagePainter(model = backgroundAssetUri)
         Image(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(assetContainerHeightDp.dp)
-                .onGloballyPositioned { updateCapturingViewBounds(it.boundsInRoot()) },
-            painter = backgroundAsset,
+                .onGloballyPositioned {
+                    updateCapturingViewBounds(it.boundsInRoot())
+                }
+            ,
+            painter = painter,
             contentScale = ContentScale.Crop,
             contentDescription = ""
         )
@@ -155,7 +150,7 @@ fun RenderAsset(
 
     val asset = painterResource(R.drawable.deal_with_it_sunglasses_default)
 
-    Box(
+    Box (
         modifier = Modifier
             .fillMaxWidth()
             .height(assetContainerHeightDp.dp)
@@ -184,7 +179,8 @@ fun RenderAsset(
                     )
                 }
                 .size(200.dp, 200.dp)
-                .zIndex(1f),
+                .zIndex(1f)
+            ,
             painter = asset,
             contentDescription = ""
         )
