@@ -1,40 +1,70 @@
 package com.roshan.dev.gifapp
 
+import android.annotation.SuppressLint
 import android.view.View
 import android.view.Window
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import com.roshan.dev.gifapp.interactors.CaptureBitmaps
+import com.roshan.dev.gifapp.interactors.CaptureBitmapsInteractor
 import com.roshan.dev.gifapp.interactors.PixelCopyJob
 import com.roshan.dev.gifapp.interactors.PixelCopyJobInteractor
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 class MainViewModel : ViewModel() {
+
+    private val dispatcher = IO
+    private val pixelCopy: PixelCopyJob = PixelCopyJobInteractor()
+    private val captureBitmaps: CaptureBitmaps = CaptureBitmapsInteractor(
+        pixelCopyJob = pixelCopy
+    )
+
     private val _state: MutableState<MainState> = mutableStateOf(MainState.Initial)
     val state: State<MainState> get() = _state
     private val _toastEventRelay: MutableStateFlow<ToastEvent?> = MutableStateFlow(null)
     val toastEventRelay: StateFlow<ToastEvent?> get() = _toastEventRelay
-    private val _errorEventRelay: MutableStateFlow<Set<ErrorEvent>> = MutableStateFlow(emptySet())
-    val errorEventRelay: StateFlow<Set<ErrorEvent>> get() = _errorEventRelay
+    private val _errorRelay: MutableStateFlow<Set<ErrorEvent>> = MutableStateFlow(setOf())
+    val errorRelay: StateFlow<Set<ErrorEvent>> get() = _errorRelay
+
+    // Suppress warning for now. We're just testing this.
+    @SuppressLint("NewApi")
+    fun captureScreenshot(
+        view: View,
+        window: Window
+    ) {
+        val state = state.value
+        check(state is MainState.DisplayBackgroundAsset) { "Invalid state: ${state}" }
+        CoroutineScope(dispatcher).launch {
+            val result = pixelCopy.execute(
+                capturingViewBounds = state.capturingViewBounds,
+                view = view,
+                window = window
+            )
+            when (result) {
+                is PixelCopyJob.PixelCopyJobState.Done -> {
+                    _state.value = state.copy(capturedBitmap = result.bitmap)
+                }
+                is PixelCopyJob.PixelCopyJobState.Error -> {
+                    publishErrorEvent(
+                        ErrorEvent(
+                            id = UUID.randomUUID().toString(),
+                            message = result.message
+                        )
+                    )
+                }
+            }
+        }
+    }
 
     fun updateState(mainState: MainState) {
         _state.value = mainState
-    }
-
-    fun publishErrorEvent(errorEvent: ErrorEvent) {
-        val current = _errorEventRelay.value.toMutableSet()
-        current.add(errorEvent)
-        _errorEventRelay.value = current
-    }
-
-    fun clearErrorEvents() {
-        _errorEventRelay.value = setOf()
     }
 
     fun showToast(
@@ -49,30 +79,13 @@ class MainViewModel : ViewModel() {
         )
     }
 
-    fun captureScreenshot(view: View, window: Window) {
-        val state = state.value
-        check(state is MainState.DisplayBackgroundAsset) { "Invalid State : $state" }
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = PixelCopyJobInteractor().execute(
-                capturingViewBounds = state.capturingViewBounds,
-                view = view,
-                window = window
-            )
-            when (result) {
-                is PixelCopyJob.PixelCopyJobState.Done -> {
-                    _state.value = state.copy(capturedBitmap = result.bitmap)
-                }
-
-                is PixelCopyJob.PixelCopyJobState.Error -> {
-                    publishErrorEvent(
-                        ErrorEvent(
-                            id = UUID.randomUUID().toString(),
-                            message = result.message
-                        )
-                    )
-                }
-            }
-        }
+    private fun publishErrorEvent(errorEvent: ErrorEvent) {
+        val current = _errorRelay.value.toMutableSet()
+        current.add(errorEvent)
+        _errorRelay.value = current
     }
 
+    fun clearErrorEvents() {
+        _errorRelay.value = setOf()
+    }
 }
