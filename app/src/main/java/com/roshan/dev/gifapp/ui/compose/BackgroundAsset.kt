@@ -1,5 +1,6 @@
-package com.roshan.dev.gifapp.ui
+package com.roshan.dev.gifapp.ui.compose
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,11 +18,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -36,6 +40,9 @@ import kotlin.math.sin
 @Composable
 fun BackgroundAsset(
     backgroundAssetUri: Uri,
+    capturedBitmap: Bitmap?,
+    updateCapturingViewBounds: (Rect) -> Unit,
+    startBitmapCaptureJob: () -> Unit,
     launchImagePicker: () -> Unit,
 ) {
     ConstraintLayout(
@@ -60,6 +67,10 @@ fun BackgroundAsset(
             isRecording = isRecording,
             updateIsRecording = {
                 isRecording = it
+                if (isRecording) {
+                    startBitmapCaptureJob()
+                    isRecording = false
+                }
             }
         )
 
@@ -75,7 +86,10 @@ fun BackgroundAsset(
                 }
                 .zIndex(1f),
             backgroundAssetUri = backgroundAssetUri,
-            assetContainerHeightDp = assetContainerHeight
+            assetContainerHeightDp = assetContainerHeight,
+            updateCapturingViewBounds = updateCapturingViewBounds,
+            captureBitmap = capturedBitmap
+
         )
 
         // Bottom container
@@ -103,17 +117,24 @@ fun RenderBackground(
     modifier: Modifier,
     backgroundAssetUri: Uri,
     assetContainerHeightDp: Int,
+    updateCapturingViewBounds: (Rect) -> Unit,
+    captureBitmap: Bitmap?
 ) {
     Box(
         modifier = modifier
             .wrapContentSize()
     ) {
 
-        val backgroundAsset = rememberAsyncImagePainter(model = backgroundAssetUri)
+        val backgroundAsset = if (captureBitmap != null) {
+            rememberAsyncImagePainter(model = captureBitmap)
+        } else {
+            rememberAsyncImagePainter(model = backgroundAssetUri)
+        }
         Image(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(assetContainerHeightDp.dp),
+                .height(assetContainerHeightDp.dp)
+                .onGloballyPositioned { updateCapturingViewBounds(it.boundsInRoot()) },
             painter = backgroundAsset,
             contentScale = ContentScale.Crop,
             contentDescription = ""

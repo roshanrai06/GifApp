@@ -1,4 +1,4 @@
-package com.roshan.dev.gifapp.ui
+package com.roshan.dev.gifapp.ui.compose
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth

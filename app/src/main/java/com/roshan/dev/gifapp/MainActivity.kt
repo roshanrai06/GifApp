@@ -12,13 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.lifecycleScope
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageView
 import com.canhub.cropper.options
-import com.roshan.dev.gifapp.ui.BackgroundAsset
-import com.roshan.dev.gifapp.ui.SelectBackgroundAsset
+import com.roshan.dev.gifapp.ui.compose.BackgroundAsset
+import com.roshan.dev.gifapp.ui.compose.SelectBackgroundAsset
 import com.roshan.dev.gifapp.ui.theme.GifAppTheme
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -38,6 +39,8 @@ class MainActivity : ComponentActivity() {
                             viewModel.updateState(
                                 MainState.DisplayBackgroundAsset(
                                     backgroundAssetUri = it,
+                                    capturingViewBounds = null,
+                                    capturedBitmap = null,
                                 )
                             )
                         }
@@ -78,6 +81,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
+                    val view = LocalView.current
                     val state = viewModel.state.value
                     Column(modifier = Modifier.fillMaxSize()) {
                         when (state) {
@@ -96,6 +100,20 @@ class MainActivity : ComponentActivity() {
 
                             is MainState.DisplayBackgroundAsset -> BackgroundAsset(
                                 backgroundAssetUri = state.backgroundAssetUri,
+                                capturedBitmap = state.capturedBitmap,
+                                updateCapturingViewBounds = { rect ->
+                                    viewModel.updateState(
+                                        state.copy(
+                                            capturingViewBounds = rect
+                                        )
+                                    )
+                                },
+                                startBitmapCaptureJob = {
+                                    viewModel.captureScreenshot(
+                                        view = view,
+                                        window = window
+                                    )
+                                },
                                 launchImagePicker = {
                                     backgroundAssetPickerLauncher.launch("image/*")
                                 }

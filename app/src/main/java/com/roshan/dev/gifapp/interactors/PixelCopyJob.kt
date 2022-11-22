@@ -13,19 +13,19 @@ import kotlin.math.roundToInt
 
 interface PixelCopyJob {
     suspend fun execute(capturingViewBounds: Rect?, view: View, window: Window): PixelCopyJobState
+    sealed class PixelCopyJobState {
+        data class Done(val bitmap: Bitmap) : PixelCopyJobState()
+        data class Error(val message: String) : PixelCopyJobState()
+    }
 }
 
-sealed class PixelCopyJobState {
-    data class Done(val bitmap: Bitmap) : PixelCopyJobState()
-    data class Error(val message: String) : PixelCopyJobState()
-}
 
 class PixelCopyJobInteractor : PixelCopyJob {
     override suspend fun execute(
         capturingViewBounds: Rect?,
         view: View,
         window: Window
-    ): PixelCopyJobState = suspendCancellableCoroutine { cont ->
+    ): PixelCopyJob.PixelCopyJobState = suspendCancellableCoroutine { cont ->
         try {
             check(capturingViewBounds != null) { "Invalid capture area." }
             val bitmap = Bitmap.createBitmap(
@@ -58,15 +58,15 @@ class PixelCopyJobInteractor : PixelCopyJob {
                             capturingViewBounds.width.roundToInt(),
                             capturingViewBounds.height.roundToInt()
                         )
-                        cont.resume(PixelCopyJobState.Done(bmp))
+                        cont.resume(PixelCopyJob.PixelCopyJobState.Done(bmp))
                     } else {
-                        cont.resume(PixelCopyJobState.Error(PIXEL_COPY_ERROR))
+                        cont.resume(PixelCopyJob.PixelCopyJobState.Error(PIXEL_COPY_ERROR))
                     }
                 },
                 Handler(Looper.getMainLooper())
             )
         } catch (e: Exception) {
-            cont.resume(PixelCopyJobState.Error((e.message ?: PIXEL_COPY_ERROR)))
+            cont.resume(PixelCopyJob.PixelCopyJobState.Error((e.message ?: PIXEL_COPY_ERROR)))
         }
     }
 
