@@ -28,13 +28,17 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
+import com.roshan.dev.gifapp.domain.DataState
 
 @Composable
 fun Gif(
     imageLoader: ImageLoader,
     gifUri: Uri?,
     discardGif: () -> Unit,
+    onSavedGif: () -> Unit,
+    loadingState: DataState.Loading.LoadingState,
 ) {
+    StandardLoadingUI(loadingState = loadingState)
     val configuration = LocalConfiguration.current
     Box(
         modifier = Modifier
@@ -65,9 +69,7 @@ fun Gif(
                     }
                     Spacer(Modifier.weight(1f))
                     Button(
-                        onClick = {
-                            // TODO("Save the gif")
-                        },
+                        onClick = onSavedGif,
                         colors = ButtonDefaults.buttonColors(
                             backgroundColor = Color.Green
                         ),
@@ -79,12 +81,12 @@ fun Gif(
                         )
                     }
                 }
-                val image: Painter =
-                    rememberAsyncImagePainter(model = gifUri, imageLoader = imageLoader)
+                val image: Painter = rememberAsyncImagePainter(model = gifUri, imageLoader = imageLoader)
                 Image(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height((configuration.screenHeightDp * 0.6).dp),
+                        .height((configuration.screenHeightDp * 0.6).dp)
+                    ,
                     contentScale = ContentScale.Crop,
                     painter = image,
                     contentDescription = ""

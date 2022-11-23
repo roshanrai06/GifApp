@@ -8,9 +8,9 @@ import com.roshan.dev.gifapp.domain.DataState.Loading.LoadingState.Idle
 
 sealed class MainState {
 
-    object Initial : MainState()
+    object Initial: MainState()
 
-    object DisplaySelectBackgroundAsset : MainState()
+    object DisplaySelectBackgroundAsset: MainState()
 
     data class DisplayBackgroundAsset(
         val backgroundAssetUri: Uri,
@@ -22,14 +22,16 @@ sealed class MainState {
 
         // Displayed as a CircularIndeterminateProgressBar overlay in the center of the screen.
         val loadingState: LoadingState = Idle,
-    ) : MainState()
+    ): MainState()
 
     data class DisplayGif(
         val gifUri: Uri?,
         val originalGifSize: Int,
 
         // Carry around the original background asset URI in-case user resets the gif.
-        val backgroundAssetUri: Uri
-    ) : MainState()
-}
+        val backgroundAssetUri: Uri,
 
+        // Displayed as a CircularIndeterminateProgressBar overlay in the center of the screen.
+        val loadingState: LoadingState = Idle,
+    ): MainState()
+}

@@ -1,5 +1,6 @@
 package com.roshan.dev.gifapp
 
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -14,6 +15,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import coil.ImageLoader
 import coil.decode.GifDecoder
@@ -29,12 +31,43 @@ import com.roshan.dev.gifapp.ui.compose.SelectBackgroundAsset
 import com.roshan.dev.gifapp.ui.theme.GifAppTheme
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import android.Manifest
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
     private lateinit var imageLoader: ImageLoader
+    private fun checkFilePermissions(): Boolean {
+        val writePermission = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+        val readPermission = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        )
+        return writePermission == PackageManager.PERMISSION_GRANTED && readPermission == PackageManager.PERMISSION_GRANTED
+    }
+
+    private val externalStoragePermissionRequest = this@MainActivity.registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        permissions.entries.forEach {
+            if (!it.value) {
+                viewModel.showToast(message = "To enable this permission you'll have to do so in system settings for this app.")
+            }
+        }
+    }
+
+    private fun launchPermissionRequest() {
+        externalStoragePermissionRequest.launch(
+            arrayOf(
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+            )
+        )
+    }
 
     private val cropAssetLauncher: ActivityResultLauncher<CropImageContractOptions> =
         this@MainActivity.registerForActivityResult(
@@ -145,8 +178,20 @@ class MainActivity : ComponentActivity() {
                             is MainState.DisplayGif -> Gif(
                                 imageLoader = imageLoader,
                                 gifUri = state.gifUri,
-                                discardGif = viewModel::deleteGif
+                                discardGif = viewModel::deleteGif,
+                                onSavedGif = {
+                                    viewModel.saveGif(
+                                        context = this@MainActivity,
+                                        contentResolver = contentResolver,
+                                        launchPermissionRequest = {
+                                            launchPermissionRequest()
+                                        },
+                                        checkFilePermissions = ::checkFilePermissions,
+                                    )
+                                },
+                                loadingState = state.loadingState
                             )
+
                         }
                     }
                 }
