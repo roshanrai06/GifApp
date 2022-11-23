@@ -7,7 +7,7 @@ import android.view.View
 import android.view.Window
 import androidx.compose.ui.geometry.Rect
 import com.roshan.dev.gifapp.domain.DataState
-import com.roshan.dev.gifapp.domain.LoadingState
+import com.roshan.dev.gifapp.domain.DataState.Loading.LoadingState
 import com.roshan.dev.gifapp.interactors.CaptureBitmapsInteractor.Companion.CAPTURE_INTERVAL_MS
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

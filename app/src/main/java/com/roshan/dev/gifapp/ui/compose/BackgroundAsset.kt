@@ -32,6 +32,7 @@ import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstraintLayout
 import coil.compose.rememberAsyncImagePainter
 import com.roshan.dev.gifapp.R
+import com.roshan.dev.gifapp.domain.DataState
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -41,6 +42,8 @@ fun BackgroundAsset(
     backgroundAssetUri: Uri,
     updateCapturingViewBounds: (Rect) -> Unit,
     startBitmapCaptureJob: () -> Unit,
+    endBitmapCaptureJob: () -> Unit,
+    bitmapCaptureLoadingState: DataState.Loading.LoadingState,
     launchImagePicker: () -> Unit,
 ) {
     ConstraintLayout(
@@ -50,7 +53,6 @@ fun BackgroundAsset(
 
         // Top bar
         // topBarHeight = (default app bar height) + (button padding)
-        var isRecording by remember { mutableStateOf(false) }
         val topBarHeight = remember { 56 + 16 }
         RecordActionBar(
             modifier = Modifier
@@ -61,16 +63,10 @@ fun BackgroundAsset(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
-                .zIndex(2f)
-            ,
-            isRecording = isRecording,
-            updateIsRecording = {
-                isRecording = it
-                if (isRecording) {
-                    startBitmapCaptureJob()
-                    isRecording = false
-                }
-            }
+                .zIndex(2f),
+            bitmapCaptureLoadingState = bitmapCaptureLoadingState,
+            startBitmapCaptureJob = startBitmapCaptureJob,
+            endBitmapCaptureJob = endBitmapCaptureJob
         )
 
         // Gif capture area
@@ -83,15 +79,15 @@ fun BackgroundAsset(
                     end.linkTo(parent.end)
                     top.linkTo(topBar.bottom)
                 }
-                .zIndex(1f)
-            ,
+                .zIndex(1f),
             updateCapturingViewBounds = updateCapturingViewBounds,
             backgroundAssetUri = backgroundAssetUri,
             assetContainerHeightDp = assetContainerHeight
         )
 
         // Bottom container
-        val bottomContainerHeight = remember { configuration.screenHeightDp - assetContainerHeight - topBarHeight }
+        val bottomContainerHeight =
+            remember { configuration.screenHeightDp - assetContainerHeight - topBarHeight }
         BackgroundAssetFooter(
             modifier = Modifier
                 .background(Color.White)
@@ -102,9 +98,8 @@ fun BackgroundAsset(
                     top.linkTo(assetContainer.bottom)
                     bottom.linkTo(parent.bottom)
                 }
-                .zIndex(2f)
-            ,
-            isRecording = isRecording,
+                .zIndex(2f),
+            isRecording = bitmapCaptureLoadingState is DataState.Loading.LoadingState.Active,
             launchImagePicker = launchImagePicker
         )
     }
@@ -128,8 +123,7 @@ fun RenderBackground(
                 .height(assetContainerHeightDp.dp)
                 .onGloballyPositioned {
                     updateCapturingViewBounds(it.boundsInRoot())
-                }
-            ,
+                },
             painter = painter,
             contentScale = ContentScale.Crop,
             contentDescription = ""
@@ -150,7 +144,7 @@ fun RenderAsset(
 
     val asset = painterResource(R.drawable.deal_with_it_sunglasses_default)
 
-    Box (
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(assetContainerHeightDp.dp)
@@ -179,8 +173,7 @@ fun RenderAsset(
                     )
                 }
                 .size(200.dp, 200.dp)
-                .zIndex(1f)
-            ,
+                .zIndex(1f),
             painter = asset,
             contentDescription = ""
         )
