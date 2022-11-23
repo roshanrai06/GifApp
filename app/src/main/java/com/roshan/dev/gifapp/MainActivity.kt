@@ -1,5 +1,6 @@
 package com.roshan.dev.gifapp
 
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -14,18 +15,26 @@ import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.lifecycleScope
+import coil.ImageLoader
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageView
 import com.canhub.cropper.options
+import com.roshan.dev.gifapp.domain.RealCacheProvider
 import com.roshan.dev.gifapp.ui.compose.BackgroundAsset
+import com.roshan.dev.gifapp.ui.compose.Gif
 import com.roshan.dev.gifapp.ui.compose.SelectBackgroundAsset
 import com.roshan.dev.gifapp.ui.theme.GifAppTheme
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 class MainActivity : ComponentActivity() {
+
     private val viewModel: MainViewModel by viewModels()
+
+    private lateinit var imageLoader: ImageLoader
 
     private val cropAssetLauncher: ActivityResultLauncher<CropImageContractOptions> =
         this@MainActivity.registerForActivityResult(
@@ -39,7 +48,7 @@ class MainActivity : ComponentActivity() {
                             viewModel.updateState(
                                 MainState.DisplayBackgroundAsset(
                                     backgroundAssetUri = it,
-                                    capturingViewBounds = null
+                                    capturingViewBounds = null,
                                 )
                             )
                         }
@@ -55,18 +64,32 @@ class MainActivity : ComponentActivity() {
     private val backgroundAssetPickerLauncher: ActivityResultLauncher<String> =
         this@MainActivity.registerForActivityResult(
             ActivityResultContracts.GetContent()
-        ) { uri ->
-            uri?.let {
-                cropAssetLauncher.launch(
-                    options(uri = it) {
-                        setGuidelines(CropImageView.Guidelines.ON)
-                    }
-                )
-            } ?: viewModel.showToast(message = "Something went wrong selecting the image.")
+        ) {
+            cropAssetLauncher.launch(
+                options(
+                    uri = it,
+                ) {
+                    setGuidelines(CropImageView.Guidelines.ON)
+                }
+            )
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // TODO("Will remove this when we add Hilt for DI.")
+        imageLoader = ImageLoader.Builder(application)
+            .components {
+                if (Build.VERSION.SDK_INT >= 28) {
+                    add(ImageDecoderDecoder.Factory())
+                } else {
+                    add(GifDecoder.Factory())
+                }
+            }
+            .build()
+
+        // TODO("Will remove this when we add Hilt for DI.")
+        viewModel.setCacheProvider(RealCacheProvider(application))
 
         viewModel.toastEventRelay.onEach { toastEvent ->
             if (toastEvent != null) {
@@ -106,6 +129,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 startBitmapCaptureJob = {
                                     viewModel.runBitmapCaptureJob(
+                                        contentResolver = contentResolver,
                                         view = view,
                                         window = window
                                     )
@@ -114,10 +138,15 @@ class MainActivity : ComponentActivity() {
                                 bitmapCaptureLoadingState = state.bitmapCaptureLoadingState,
                                 launchImagePicker = {
                                     backgroundAssetPickerLauncher.launch("image/*")
-                                }
+                                },
+                                loadingState = state.loadingState
                             )
 
-                            else -> {}
+                            is MainState.DisplayGif -> Gif(
+                                imageLoader = imageLoader,
+                                gifUri = state.gifUri,
+                                discardGif = viewModel::deleteGif
+                            )
                         }
                     }
                 }

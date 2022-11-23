@@ -45,6 +45,7 @@ fun BackgroundAsset(
     endBitmapCaptureJob: () -> Unit,
     bitmapCaptureLoadingState: DataState.Loading.LoadingState,
     launchImagePicker: () -> Unit,
+    loadingState: DataState.Loading.LoadingState,
 ) {
     ConstraintLayout(
         modifier = Modifier.fillMaxSize()
@@ -63,7 +64,8 @@ fun BackgroundAsset(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
-                .zIndex(2f),
+                .zIndex(2f)
+            ,
             bitmapCaptureLoadingState = bitmapCaptureLoadingState,
             startBitmapCaptureJob = startBitmapCaptureJob,
             endBitmapCaptureJob = endBitmapCaptureJob
@@ -79,15 +81,16 @@ fun BackgroundAsset(
                     end.linkTo(parent.end)
                     top.linkTo(topBar.bottom)
                 }
-                .zIndex(1f),
+                .zIndex(1f)
+            ,
             updateCapturingViewBounds = updateCapturingViewBounds,
             backgroundAssetUri = backgroundAssetUri,
             assetContainerHeightDp = assetContainerHeight
         )
+        StandardLoadingUI(loadingState = loadingState)
 
         // Bottom container
-        val bottomContainerHeight =
-            remember { configuration.screenHeightDp - assetContainerHeight - topBarHeight }
+        val bottomContainerHeight = remember { configuration.screenHeightDp - assetContainerHeight - topBarHeight }
         BackgroundAssetFooter(
             modifier = Modifier
                 .background(Color.White)
@@ -98,7 +101,8 @@ fun BackgroundAsset(
                     top.linkTo(assetContainer.bottom)
                     bottom.linkTo(parent.bottom)
                 }
-                .zIndex(2f),
+                .zIndex(2f)
+            ,
             isRecording = bitmapCaptureLoadingState is DataState.Loading.LoadingState.Active,
             launchImagePicker = launchImagePicker
         )
@@ -123,7 +127,8 @@ fun RenderBackground(
                 .height(assetContainerHeightDp.dp)
                 .onGloballyPositioned {
                     updateCapturingViewBounds(it.boundsInRoot())
-                },
+                }
+            ,
             painter = painter,
             contentScale = ContentScale.Crop,
             contentDescription = ""
@@ -144,7 +149,7 @@ fun RenderAsset(
 
     val asset = painterResource(R.drawable.deal_with_it_sunglasses_default)
 
-    Box(
+    Box (
         modifier = Modifier
             .fillMaxWidth()
             .height(assetContainerHeightDp.dp)
@@ -173,7 +178,8 @@ fun RenderAsset(
                     )
                 }
                 .size(200.dp, 200.dp)
-                .zIndex(1f),
+                .zIndex(1f)
+            ,
             painter = asset,
             contentDescription = ""
         )
